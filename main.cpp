@@ -22,7 +22,9 @@ auto get_ws_url(const std::string& token) {
 static const std::string user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36";
 
 class bot {
+	std::string name;
 	std::string token;
+	int discriminator;
 	struct user {
 		snowflake id;
 		std::string username;
@@ -82,7 +84,9 @@ public:
 
 	void ready_event_f(const nlohmann::json& j) {
 		session_id = j["d"]["session_id"].get<std::string>();
-		std::cout << j["t"].get<std::string>() << "\n";
+		name = j["d"]["user"]["username"].get<std::string>();
+		discriminator = std::stoi(j["d"]["user"]["discriminator"].get<std::string>());
+		std::cout << fmt::format("READY\nLogged in as: {}#{}", name, discriminator);
 	}
 	void guild_create_f(const nlohmann::json& j) {
 		std::vector<channel> temp;
@@ -122,7 +126,7 @@ public:
 				content);
 	}
 	void message_update_f(const nlohmann::json& j) {
-		if (j["d"]["author"]["username"].get<std::string>() == "GayBot") return;
+		if (j["d"]["author"]["username"].get<std::string>() == name) return;
 		auto content = j["d"]["content"].get<std::string>();
 		if (content[0] == prefix) {
 			on_command(content, std::stoull(j["d"]["channel_id"].get<std::string>()));
