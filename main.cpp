@@ -183,9 +183,9 @@ public:
 		              cpr::Header{ { "Authorization", "Bot " + token } },
 		              cpr::Body{ body.dump() });
 		if (r.status_code == 200) {
-			std::cout << "Command callback: successfully sent message\n";
+			std::cout << "Command callback: successfully sent message\n\n";
 		} else {
-			std::cout << "Error: " << r.status_code << "\n" << "With body: " << r.text << "\n";
+			std::cout << "Error: " << r.status_code << "\n" << "With body: " << r.text << "\n\n";
 		}
 	}
 
@@ -211,7 +211,7 @@ public:
 int main() {
 	int seq_number = 0;
 	websocket_client c;
-	bot b('>', "NTc3NTE3NDMxNTA1OTQ0NTc5.XcbWVg.-ah7Kz0mpfnJBGM2QPHPXEjGKbU");
+	bot b('>', "");
 	std::unordered_map<std::string, void(bot::*)(const nlohmann::json&)> event_map {
 		{ "READY", &bot::ready_event_f },
 		{ "GUILD_CREATE", &bot::guild_create_f },
@@ -269,6 +269,5 @@ int main() {
 		}
 		std::this_thread::sleep_for(10ms);
 	}
-	/*t->join();
-	return 0;*/
+	return 0;
 }
