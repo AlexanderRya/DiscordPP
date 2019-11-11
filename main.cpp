@@ -223,11 +223,11 @@ int main() {
 	websocket_client c;
 	std::string token;
 	std::ifstream f("token.txt");
-	if (f.is_open()) {
+	if (!f.is_open()) {
 		std::cout << "ERROR, couldn't open file.\n\n";
 		return -1;
 	}
-	f >> token;
+	std::getline(f, token);
 	bot b('>', token);
 	std::unordered_map<std::string, void(bot::*)(const nlohmann::json&)> event_map {
 		{ "READY", &bot::ready_event_f },
