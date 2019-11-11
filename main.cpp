@@ -86,7 +86,7 @@ public:
 		session_id = j["d"]["session_id"].get<std::string>();
 		name = j["d"]["user"]["username"].get<std::string>();
 		discriminator = std::stoi(j["d"]["user"]["discriminator"].get<std::string>());
-		std::cout << fmt::format("READY\nLogged in as: {}#{}", name, discriminator);
+		std::cout << fmt::format("READY\nLogged in as: {}#{}\n\n", name, discriminator);
 	}
 	void guild_create_f(const nlohmann::json& j) {
 		std::vector<channel> temp;
@@ -149,7 +149,7 @@ public:
 	}
 
 	void presence_update_f(const nlohmann::json& j) {
-		auto user = get_user_from_id(std::stoull(j["d"]["user"]["id"].get<std::string>()));
+		/*auto user = get_user_from_id(std::stoull(j["d"]["user"]["id"].get<std::string>()));
 		auto guild = get_guild_from_id(std::stoull(j["d"]["guild_id"].get<std::string>()));
 		if (j["d"]["activities"].empty() || j["d"]["activities"][0]["name"].get<std::string>() == "Custom Status") {
 			std::cout <<
@@ -165,7 +165,8 @@ public:
 			        user["discriminator"].get<std::string>(),
 			        guild["name"].get<std::string>(),
 			        j["d"]["activities"][0]["name"].get<std::string>());
-		}
+		}*/
+		std::cout << "PRESENCE_UPDATE callback\n\n";
 	}
 
 	void on_command(const std::string& command, const snowflake channel_id) {
@@ -215,7 +216,10 @@ public:
 int main() {
 	int seq_number = 0;
 	websocket_client c;
-	bot b('>', "");
+	std::string token;
+	std::ifstream f("token.txt");
+	f >> token;
+	bot b('>', token);
 	std::unordered_map<std::string, void(bot::*)(const nlohmann::json&)> event_map {
 		{ "READY", &bot::ready_event_f },
 		{ "GUILD_CREATE", &bot::guild_create_f },
@@ -224,14 +228,13 @@ int main() {
 		{ "MESSAGE_DELETE", &bot::message_delete_f },
 		{ "PRESENCE_UPDATE", &bot::presence_update_f }
 	};
-	std::unique_ptr<std::thread> t;
 	bool connection_closed = false;
 	c.connect(U(get_ws_url(b.get_token()) + "/?v=6&encoding=json"));
 	auto s = c.receive().get().extract_string().get();
 	auto req_json = nlohmann::json::parse(s);
 	auto interval = req_json["d"]["heartbeat_interval"].get<int>();
 	std::cout << "OP_CODE 10 payload received!, heartbeat interval: " << interval << "\n";
-	t = std::make_unique<std::thread>([&connection_closed, &c, &interval]() {
+	std::thread t([&connection_closed, &c, &interval]() {
 		while (!connection_closed) {
 			websocket_outgoing_message msg;
 			msg.set_utf8_message(nlohmann::json {
