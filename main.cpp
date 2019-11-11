@@ -14,9 +14,14 @@ std::string get_api_url() {
 	return "https://discordapp.com/api/v6";
 }
 auto get_ws_url(const std::string& token) {
-	return nlohmann::json::parse(cpr::Get(
-			cpr::Url{ get_api_url() + "/gateway/bot" },
-			cpr::Header{ { "Authorization", "Bot " + token } }).text)["url"].get<std::string>();
+	try {
+		return nlohmann::json::parse(cpr::Get(
+				cpr::Url{ get_api_url() + "/gateway/bot" },
+				cpr::Header{ { "Authorization", "Bot " + token } }).text)["url"].get<std::string>();
+	} catch (...) {
+		std::cout << "Error, invalid token.\n\n";
+		std::abort();
+	}
 }
 
 static const std::string user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36";
@@ -218,6 +223,10 @@ int main() {
 	websocket_client c;
 	std::string token;
 	std::ifstream f("token.txt");
+	if (f.is_open()) {
+		std::cout << "ERROR, couldn't open file.\n\n";
+		return -1;
+	}
 	f >> token;
 	bot b('>', token);
 	std::unordered_map<std::string, void(bot::*)(const nlohmann::json&)> event_map {
