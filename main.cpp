@@ -24,6 +24,17 @@ auto get_ws_url(const std::string& token) {
 	}
 }
 
+void print_time() {
+	auto t = std::chrono::system_clock::to_time_t(std::chrono::high_resolution_clock::now());
+	auto ft = *std::localtime(&t);
+	std::cout << fmt::format("[{}:{}:{}] ", ft.tm_hour, ft.tm_min, ft.tm_sec);
+}
+
+std::ostream& operator <<(std::ostream& os, void(*f)()) {
+	f();
+	return os;
+}
+
 static const std::string user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36";
 
 enum PERMS : std::size_t {
@@ -64,9 +75,9 @@ public:
 			r.status_code == 200
 				? nlohmann::json::parse(r.text)
 				: (static_cast<void>(
-					std::cout << "Error code: "
-						<< r.status_code << "\nWith body: " << r.text << "\n\n"),
-							nlohmann::json({}));
+					std::cout << print_time 
+							  << "Error code: " << r.status_code << "\nWith body: " << r.text << "\n\n"),
+					nlohmann::json({}));
 	}
 	nlohmann::json get_guild_from_id(const snowflake id) {
 		auto r = cpr::Get(cpr::Url{ get_api_url() + "/guilds/" + std::to_string(id) },
@@ -76,8 +87,8 @@ public:
 				r.status_code == 200
 				? nlohmann::json::parse(r.text)
 				: (static_cast<void>(
-					std::cout << "Error code: "
-					          << r.status_code << "\nWith body: " << r.text << "\n\n"),
+					std::cout << print_time 
+							  <<  "Error code: " << r.status_code << "\nWith body: " << r.text << "\n\n"),
 					nlohmann::json({}));
 	}
 	nlohmann::json get_channel_from_id(const snowflake id) {
@@ -88,8 +99,8 @@ public:
 				r.status_code == 200
 				? nlohmann::json::parse(r.text)
 				: (static_cast<void>(
-						std::cout << "Error code: "
-						          << r.status_code << "\nWith body: " << r.text << "\n\n"),
+						std::cout << print_time
+								  << "Error code: " << r.status_code << "\nWith body: " << r.text << "\n\n"),
 						nlohmann::json({}));
 	}
 
@@ -103,8 +114,8 @@ public:
 				r.status_code == 200
 				? nlohmann::json::parse(r.text)
 				: (static_cast<void>(
-						std::cout << "Error code: "
-						          << r.status_code << "\nWith body: " << r.text << "\n\n"),
+						std::cout << print_time 
+								  <<  "Error code: " << r.status_code << "\nWith body: " << r.text << "\n\n"),
 						nlohmann::json({}));
 	}
 
@@ -112,7 +123,7 @@ public:
 		session_id = j["d"]["session_id"].get<std::string>();
 		name = j["d"]["user"]["username"].get<std::string>();
 		discriminator = std::stoi(j["d"]["user"]["discriminator"].get<std::string>());
-		std::cout << fmt::format("READY\nLogged in as: {}#{}\n\n", name, discriminator);
+		std::cout << print_time << fmt::format("READY\nLogged in as: {}#{}\n\n", name, discriminator);
 	}
 	void guild_create_f(const nlohmann::json& j) {
 		std::vector<channel> temp;
@@ -128,7 +139,8 @@ public:
 			}, std::vector<channel> {
 				std::move(temp)
 			});
-		std::cout << j["t"].get<std::string>()
+		std::cout << print_time 
+				<< j["t"].get<std::string>()
 		        << "\nGUILD_NAME - GUILD_ID: "
 		        << gcv.back().first.name << " - " << gcv.back().first.id << "\n\n";
 	}
@@ -147,6 +159,7 @@ public:
 		auto channel_name = get_channel_from_id(
 				std::stoull(j["d"]["channel_id"].get<std::string>()))["name"].get<std::string>();
 		std::cout <<
+			print_time << 
 			fmt::format("MESSAGE_CREATE callback\nGuild name: {}\nChannel name: {}\nUser: {}#{}\nmessage: {}\n\n",
 				guild_name,
 				channel_name,
@@ -160,7 +173,8 @@ public:
 				std::stoull(j["d"]["guild_id"].get<std::string>()))["name"].get<std::string>();
 		auto channel_name = get_channel_from_id(
 				std::stoull(j["d"]["channel_id"].get<std::string>()))["name"].get<std::string>();
-		std::cout <<
+		std::cout << 
+			print_time << 
 			fmt::format("MESSAGE_UPDATE callback\nGuild name: {}\nChannel name: {}\nUser: {}#{} has updated a message: {}\n\n",
 		        guild_name,
 		        channel_name,
@@ -169,7 +183,7 @@ public:
 		        content);
 	}
 	void message_delete_f(const nlohmann::json&) {
-		std::cout << "DELETE_MESSAGE callback\n\n";
+		std::cout << print_time << "DELETE_MESSAGE callback\n\n";
 	}
 
 	void presence_update_f(const nlohmann::json& j) {
@@ -190,7 +204,7 @@ public:
 			        guild["name"].get<std::string>(),
 			        j["d"]["activities"][0]["name"].get<std::string>());
 		}*/
-		std::cout << "PRESENCE_UPDATE callback\n\n";
+		std::cout << print_time << "PRESENCE_UPDATE callback\n\n";
 	}
 
 	void on_command(const snowflake sender, const std::string& command, const snowflake channel_id, const snowflake guild_id) {
@@ -256,9 +270,9 @@ public:
 		              cpr::Header{ { "Authorization", "Bot " + token } },
 		              cpr::Body{ body.dump() });
 		if (r.status_code == 200) {
-			std::cout << "Command callback: successfully sent message\n\n";
+			std::cout << print_time << "Command callback: successfully sent message\n\n";
 		} else {
-			std::cout << "Error: " << r.status_code << "\n" << "With body: " << r.text << "\n\n";
+			std::cout << print_time << "Error: " << r.status_code << "\n" << "With body: " << r.text << "\n\n";
 		}
 	}
 
@@ -288,7 +302,7 @@ int main() {
 	int seq_number = 0;
 	websocket_client c;
 	std::string token;
-	std::ifstream f("../token.txt");
+	std::ifstream f("token.txt");
 	if (!f.is_open()) {
 		std::cout << "ERROR, couldn't open file.\n\n";
 		return -1;
@@ -308,7 +322,7 @@ int main() {
 	auto s = c.receive().get().extract_string().get();
 	auto req_json = nlohmann::json::parse(s);
 	auto interval = req_json["d"]["heartbeat_interval"].get<int>();
-	std::cout << "OP_CODE 10 payload received!, heartbeat interval: " << interval << "\n";
+	std::cout << "OP_CODE 10 payload received!, heartbeat interval: " << interval << "\n\n";
 	std::thread t([&connection_closed, &c, &interval]() {
 		while (!connection_closed) {
 			websocket_outgoing_message msg;
@@ -341,12 +355,14 @@ int main() {
 			if (event_map.find(j["t"].get<std::string>()) != event_map.end()) {
 				(b.*(event_map[j["t"].get<std::string>()]))(j);
 			} else {
-				std::cout << j["t"].get<std::string>() << "\n\n";
+				std::cout << print_time << j["t"].get<std::string>() << "\n\n";
 			}
 			seq_number = j["s"].get<int>();
 		} else {
 			if (j["op"].get<int>() == 11) {
-				std::cout << "Acked! with json: " << j.dump() << "\n\n";
+				auto t = std::chrono::system_clock::to_time_t(std::chrono::high_resolution_clock::now());
+				auto ft = *std::localtime(&t);
+				std::cout << print_time << "Acked! with json: " << j.dump() << "\n\n";
 			}
 		}
 		std::this_thread::sleep_for(10ms);
