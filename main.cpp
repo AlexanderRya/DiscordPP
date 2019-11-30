@@ -25,9 +25,8 @@ auto get_ws_url(const std::string& token) {
 }
 
 void print_time() {
-	auto t = std::chrono::system_clock::to_time_t(std::chrono::high_resolution_clock::now());
-	auto ft = *std::localtime(&t);
-	std::cout << fmt::format("[{}:{}:{}] ", ft.tm_hour, ft.tm_min, ft.tm_sec);
+	auto t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+	std::cout << std::put_time(std::localtime(&t), "[%H:%M:%S] ");
 }
 
 std::ostream& operator <<(std::ostream& os, void(*f)()) {
@@ -146,7 +145,18 @@ public:
 	}
 	void message_create_f(const nlohmann::json& j) {
 		if (j["d"]["author"]["username"].get<std::string>() == name) return;
-		auto content = j["d"]["content"].get<std::string>();
+		std::string content{};
+		if (j["d"].contains("content") && j["d"].contains("embeds") && !j["d"]["embeds"].empty()) {
+			content = j["d"]["content"].get<std::string>().empty()
+			          ? j["d"]["embeds"][0]["description"].get<std::string>()
+			          : j["d"]["content"].get<std::string>();
+		} else if (j["d"].contains("content")) {
+			content = j["d"]["content"].get<std::string>();
+		} else if (j["d"].contains("embeds") && !j["d"]["embeds"].empty()) {
+			content = j["d"]["embeds"][0]["description"].get<std::string>();
+		} else {
+			return;
+		}
 		if (content[0] == prefix) {
 			on_command(std::stoull(j["d"]["author"]["id"].get<std::string>()),
 					content,
@@ -168,19 +178,7 @@ public:
 				content);
 	}
 	void message_update_f(const nlohmann::json& j) {
-		auto content = j["d"]["content"].get<std::string>();
-		auto guild_name = get_guild_from_id(
-				std::stoull(j["d"]["guild_id"].get<std::string>()))["name"].get<std::string>();
-		auto channel_name = get_channel_from_id(
-				std::stoull(j["d"]["channel_id"].get<std::string>()))["name"].get<std::string>();
-		std::cout << 
-			print_time << 
-			fmt::format("MESSAGE_UPDATE callback\nGuild name: {}\nChannel name: {}\nUser: {}#{} has updated a message: {}\n\n",
-		        guild_name,
-		        channel_name,
-		        j["d"]["author"]["username"].get<std::string>(),
-		        j["d"]["author"]["discriminator"].get<std::string>(),
-		        content);
+		std::cout << print_time << "MESSAGE_UPDATE callback\n\n";
 	}
 	void message_delete_f(const nlohmann::json&) {
 		std::cout << print_time << "DELETE_MESSAGE callback\n\n";
@@ -352,16 +350,15 @@ int main() {
 	while (true) {
 		auto j = nlohmann::json::parse(c.receive().get().extract_string().get());
 		if (j.contains("t") && !j["t"].is_null()) {
-			if (event_map.find(j["t"].get<std::string>()) != event_map.end()) {
-				(b.*(event_map[j["t"].get<std::string>()]))(j);
+			auto tpayload = j["t"].get<std::string>();
+			if (event_map.find(tpayload) != event_map.end()) {
+				(b.*(event_map[tpayload]))(j);
 			} else {
 				std::cout << print_time << j["t"].get<std::string>() << "\n\n";
 			}
 			seq_number = j["s"].get<int>();
 		} else {
 			if (j["op"].get<int>() == 11) {
-				auto t = std::chrono::system_clock::to_time_t(std::chrono::high_resolution_clock::now());
-				auto ft = *std::localtime(&t);
 				std::cout << print_time << "Acked! with json: " << j.dump() << "\n\n";
 			}
 		}
