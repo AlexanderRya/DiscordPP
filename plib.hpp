@@ -49,7 +49,7 @@
 #include <queue>
 #include <bitset>
 
-namespace core {
+namespace util {
 // C++ Ver Detect,Cross-Compiler
 #ifdef _MSC_VER
 #include <concepts>
@@ -1285,6 +1285,7 @@ void print(Ts&& ...Args) {
 	((std::cout << std::forward<Ts>(Args)), ...);
 }
 
+template <typename = void>
 inline auto split(const std::string& s, const std::string& delimiter) {
 	size_t pos_start = 0, pos_end, delim_len = delimiter.length();
 	std::vector<std::string> res;
@@ -1294,6 +1295,19 @@ inline auto split(const std::string& s, const std::string& delimiter) {
 		res.emplace_back(token);
 	}
 	res.emplace_back(s.substr(pos_start));
+	return res;
+}
+
+template <>
+inline auto split<int>(const std::string& s, const std::string& delimiter) {
+	size_t pos_start = 0, pos_end, delim_len = delimiter.length();
+	std::vector<int> res;
+	while ((pos_end = s.find(delimiter, pos_start)) != std::string::npos) {
+		auto token = s.substr(pos_start, pos_end - pos_start);
+		pos_start = pos_end + delim_len;
+		res.emplace_back(std::stoi(token));
+	}
+	res.emplace_back(std::stoi(s.substr(pos_start)));
 	return res;
 }
 
@@ -1452,17 +1466,17 @@ std::true_type {};
 template<class Ty, class... Types>
 constexpr bool is_any_of_v = std::disjunction_v<std::is_same<Ty, Types>...>;
 } // namespace core
-using core::u8;
-using core::u16;
-using core::u32;
-using core::u64;
-using core::i8;
-using core::i16;
-using core::i32;
-using core::i64;
-using core::f32;
-using core::f64;
-using core::operator <<;
+using util::u8;
+using util::u16;
+using util::u32;
+using util::u64;
+using util::i8;
+using util::i16;
+using util::i32;
+using util::i64;
+using util::f32;
+using util::f64;
+using util::operator <<;
 struct Nil {
 	using Head = Nil;
 	using Tail = Nil;
